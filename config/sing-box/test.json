@@ -75,7 +75,7 @@
     { "tag": "美国节点", "type": "selector", "outbounds": ["{all}"], "filter": [{ "action": "include", "keywords": ["🇺🇸|US|us|美国|美|United States"] }] },
     { "tag": "🎯 全球直连", "type": "direct" },
     { "tag": "dns-out", "type": "dns" },
-  ],
+  ]
   
   "route": {
         "auto_detect_interface": true,
