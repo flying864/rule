@@ -1,4 +1,4 @@
-polocloud.net
-*.polocloud.net
-earleas.com
-*.earleas.com
+# 强制代理列表
+DOMAIN-SUFFIX, polocloud.net
+DOMAIN-SUFFIX, earleas.com
+IP-CIDR, 148.135.85.74/32
