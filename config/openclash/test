@@ -1,5 +1,6 @@
 # Clash Meta (Mihomo) 配置文件
 # 修复：精准排除特定落地节点，放行通用 Reality 节点作为跳板
+# 新增：英国、加拿大、台湾节点
 
 port: 7890
 socks-port: 7891
@@ -16,7 +17,7 @@ external-controller: 0.0.0.0:9090
 proxy-providers:
   All_Subscription:
     type: http
-    # 👇👇👇 记得填入你的完整订阅链接 👇👇👇
+    # 👇👇👇 保持你的内网订阅链接不变 👇👇👇
     url: "http://192.168.1.16:3001/DKzw7DRF8m92CeQnb3rg/download/collection/all?target=ClashMeta"
     interval: 3600
     path: ./proxies/all_sub.yaml
@@ -75,10 +76,13 @@ proxy-groups:
       - "♻️ 自动选择"
       - "🛬 落地节点"
       - "🇭🇰 香港节点"
+      - "🇼🇸 台湾节点"
       - "🇺🇸 美国节点"
       - "🇯🇵 日本节点"
       - "🇰🇷 韩国节点"
       - "🇸🇬 新加坡节点"
+      - "🇬🇧 英国节点"
+      - "🇨🇦 加拿大节点"
       - "🇩🇪 德国节点"
       - "🌐 其他地区"
       - "DIRECT"
@@ -114,6 +118,15 @@ proxy-groups:
     # 筛选香港节点，但排除掉那三个落地节点
     filter: "(?i)(港|HK|Hong Kong)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
+  # 台湾跳板 (新增)
+  - name: "🇼🇸 台湾节点"
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    use:
+      - All_Subscription
+    filter: "(?i)(台|TW|Taiwan|新北|彰化)(?!.*(racknerd|jp-Reality|kr-Reality))"
+
   # 美国跳板
   - name: "🇺🇸 美国节点"
     type: url-test
@@ -123,7 +136,7 @@ proxy-groups:
       - All_Subscription
     filter: "(?i)(美|US|United States)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 日本跳板 (允许普通 Japan Reality，只拒绝 jp-Reality)
+  # 日本跳板
   - name: "🇯🇵 日本节点"
     type: url-test
     url: https://cp.cloudflare.com/generate_204
@@ -132,7 +145,7 @@ proxy-groups:
       - All_Subscription
     filter: "(?i)(日本|JP|Japan)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 韩国跳板 (允许普通 Korea Reality，只拒绝 kr-Reality)
+  # 韩国跳板
   - name: "🇰🇷 韩国节点"
     type: url-test
     url: https://cp.cloudflare.com/generate_204
@@ -141,6 +154,7 @@ proxy-groups:
       - All_Subscription
     filter: "(?i)(韩国|KR|Korea)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
+  # 新加坡跳板
   - name: "🇸🇬 新加坡节点"
     type: url-test
     url: https://cp.cloudflare.com/generate_204
@@ -148,7 +162,26 @@ proxy-groups:
     use:
       - All_Subscription
     filter: "(?i)(新加坡|SG|Singapore)(?!.*(racknerd|jp-Reality|kr-Reality))"
-    
+  
+  # 英国跳板 (新增)
+  - name: "🇬🇧 英国节点"
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    use:
+      - All_Subscription
+    filter: "(?i)(英国|UK|Great Britain)(?!.*(racknerd|jp-Reality|kr-Reality))"
+
+  # 加拿大跳板 (新增)
+  - name: "🇨🇦 加拿大节点"
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    use:
+      - All_Subscription
+    filter: "(?i)(加|Canada|CA|Montreal|Vancouver)(?!.*(racknerd|jp-Reality|kr-Reality))"
+
+  # 德国跳板
   - name: "🇩🇪 德国节点"
     type: url-test
     url: https://cp.cloudflare.com/generate_204
@@ -164,9 +197,13 @@ proxy-groups:
       - "🚀 手动选择"
       - "🛬 落地节点"
       - "🇭🇰 香港节点"
+      - "🇼🇸 台湾节点"
       - "🇸🇬 新加坡节点"
       - "🇯🇵 日本节点"
       - "🇰🇷 韩国节点"
+      - "🇬🇧 英国节点"
+      - "🇨🇦 加拿大节点"
+      - "🇺🇸 美国节点"
 
   - name: "🍎 苹果服务"
     type: select
@@ -186,6 +223,7 @@ proxy-groups:
       - "🚀 手动选择"
       - "🇺🇸 美国节点"
       - "🇭🇰 香港节点"
+      - "🇼🇸 台湾节点"
 
   - name: "🇬 谷歌服务"
     type: select
@@ -193,7 +231,10 @@ proxy-groups:
       - "🚀 手动选择"
       - "🛬 落地节点"
       - "🇭🇰 香港节点"
+      - "🇼🇸 台湾节点"
       - "🇺🇸 美国节点"
+      - "🇯🇵 日本节点"
+      - "🇸🇬 新加坡节点"
 
   - name: "🐟 漏网之鱼"
     type: select
@@ -207,8 +248,8 @@ proxy-groups:
       - "DIRECT"
     use:
       - All_Subscription
-    # 排除所有已知地区和落地节点
-    filter: "^(?!.*(?i)(港|HK|美|US|日本|JP|新加坡|SG|德|DE|韩|KR|racknerd|jp-Reality|kr-Reality)).*"
+    # 排除所有已知地区和落地节点 (加入了英、加、台的关键字)
+    filter: "^(?!.*(?i)(港|HK|美|US|日本|JP|新加坡|SG|德|DE|韩|KR|英|UK|加|CA|台|TW|racknerd|jp-Reality|kr-Reality)).*"
 
 # =========================
 # 4. 分流规则 (已修复 GEOIP 报错)
@@ -216,7 +257,7 @@ proxy-groups:
 rules:
   # --- 直连规则 (局域网防回环) ---
   - GEOSITE,private,DIRECT
-  # 👇 删除了报错的 GEOIP,private，改用更稳定的 IP-CIDR 写法
+  # IP-CIDR 写法
   - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
   - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
