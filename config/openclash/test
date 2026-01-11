@@ -1,6 +1,5 @@
 # Clash Meta (Mihomo) 配置文件
-# 修改：Netflix 组改为自动筛选含“流媒体/Netflix”关键字的具体节点
-# 功能：链式代理防回环 + 英国/加拿大/台湾节点 + DNS防泄漏
+# 优化：使用 YAML 锚点精简代码，统一测速配置
 
 port: 7890
 socks-port: 7891
@@ -12,19 +11,32 @@ ipv6: true
 external-controller: 0.0.0.0:9090
 
 # =========================
+# 0. 全局配置锚点 (这是精简的核心)
+# =========================
+# 定义 proxy-providers 通用的健康检查配置
+p-check: &provider-check
+  enable: true
+  interval: 600
+  url: "https://www.google.com/generate_204"
+
+# 定义 proxy-groups 通用的自动测速配置
+g-test: &auto-test
+  type: url-test
+  url: "https://www.google.com/generate_204"
+  interval: 300
+  tolerance: 50
+
+# =========================
 # 1. 代理集合
 # =========================
 proxy-providers:
   All_Subscription:
     type: http
-    # 👇👇👇 保持你的内网订阅链接不变 👇👇👇
+    # 👇👇👇 你的内网订阅链接 👇👇👇
     url: "http://192.168.1.16:3001/DKzw7DRF8m92CeQnb3rg/download/collection/all?target=ClashMeta"
-    interval: 86400
+    interval: 3600
     path: ./proxies/all_sub.yaml
-    health-check:
-      enable: true
-      interval: 600
-      url: https://cp.cloudflare.com/generate_204
+    health-check: *provider-check  # 👈 引用上面的锚点，代替重复代码
 
 # =========================
 # 2. 规则集合
@@ -88,10 +100,7 @@ proxy-groups:
       - "DIRECT"
 
   - name: "♻️ 自动选择"
-    type: url-test
-    url: https://cp.cloudflare.com/generate_204
-    interval: 300
-    tolerance: 50
+    <<: *auto-test  # 👈 引用自动测速模版 (自动填入 url, type, interval)
     use:
       - All_Subscription
     filter: "^(?!.*(?i)(racknerd|jp-Reality|kr-Reality)).*"
@@ -103,93 +112,64 @@ proxy-groups:
       - All_Subscription
     filter: "(?i)(racknerd|jp-Reality|kr-Reality)"
 
-  # --- 跳板组 ---
+  # --- 跳板组 (使用锚点引用，代码极其简洁) ---
   
-  # 香港跳板
   - name: "🇭🇰 香港节点"
-    type: url-test
-    url: https://cp.cloudflare.com/generate_204
-    interval: 300
-    tolerance: 50
+    <<: *auto-test
     use:
       - All_Subscription
     filter: "(?i)(港|HK|Hong Kong)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 台湾跳板
   - name: "🇼🇸 台湾节点"
-    type: url-test
-    url: https://cp.cloudflare.com/generate_204
-    interval: 300
+    <<: *auto-test
     use:
       - All_Subscription
     filter: "(?i)(台|TW|Taiwan|新北|彰化)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 美国跳板
   - name: "🇺🇸 美国节点"
-    type: url-test
-    url: https://cp.cloudflare.com/generate_204
-    interval: 300
+    <<: *auto-test
     use:
       - All_Subscription
     filter: "(?i)(美|US|United States)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 日本跳板
   - name: "🇯🇵 日本节点"
-    type: url-test
-    url: https://cp.cloudflare.com/generate_204
-    interval: 300
+    <<: *auto-test
     use:
       - All_Subscription
     filter: "(?i)(日本|JP|Japan)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 韩国跳板
   - name: "🇰🇷 韩国节点"
-    type: url-test
-    url: https://cp.cloudflare.com/generate_204
-    interval: 300
+    <<: *auto-test
     use:
       - All_Subscription
     filter: "(?i)(韩国|KR|Korea)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 新加坡跳板
   - name: "🇸🇬 新加坡节点"
-    type: url-test
-    url: https://cp.cloudflare.com/generate_204
-    interval: 300
+    <<: *auto-test
     use:
       - All_Subscription
     filter: "(?i)(新加坡|SG|Singapore)(?!.*(racknerd|jp-Reality|kr-Reality))"
   
-  # 英国跳板
   - name: "🇬🇧 英国节点"
-    type: url-test
-    url: https://cp.cloudflare.com/generate_204
-    interval: 300
+    <<: *auto-test
     use:
       - All_Subscription
     filter: "(?i)(英国|UK|Great Britain)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 加拿大跳板
   - name: "🇨🇦 加拿大节点"
-    type: url-test
-    url: https://cp.cloudflare.com/generate_204
-    interval: 300
+    <<: *auto-test
     use:
       - All_Subscription
     filter: "(?i)(加|Canada|CA|Montreal|Vancouver)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 德国跳板
   - name: "🇩🇪 德国节点"
-    type: url-test
-    url: https://cp.cloudflare.com/generate_204
-    interval: 300
+    <<: *auto-test
     use:
       - All_Subscription
     filter: "(?i)(德|Germany|DE)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
   # --- 功能组 ---
   
-  # 👇 修改处：不添加分组，只筛选含“流媒体”或“Netflix”关键字的节点
   - name: "🎥 Netflix"
     type: select
     use:
@@ -245,7 +225,6 @@ proxy-groups:
 # 4. 分流规则
 # =========================
 rules:
-  # --- 直连规则 ---
   - GEOSITE,private,DIRECT
   - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
   - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
@@ -255,11 +234,9 @@ rules:
   - IP-CIDR6,::1/128,DIRECT,no-resolve
   - IP-CIDR6,fc00::/7,DIRECT,no-resolve
   
-  # --- 外部规则集 ---
   - RULE-SET,Flying_Direct,DIRECT
   - RULE-SET,Custom_Direct,DIRECT
   
-  # --- 常用直连 ---
   - GEOSITE,google-cn,DIRECT
   - GEOSITE,category-games@cn,DIRECT
   - RULE-SET,Steam_CDN,DIRECT
@@ -269,7 +246,6 @@ rules:
   - GEOSITE,cn,DIRECT
   - GEOIP,cn,DIRECT,no-resolve
 
-  # --- 代理/分流规则 ---
   - RULE-SET,Flying_Proxy,🚀 手动选择
   - RULE-SET,Custom_Proxy,🚀 手动选择
   
@@ -285,7 +261,6 @@ rules:
   
   - GEOSITE,gfw,🚀 手动选择
 
-  # --- 兜底 ---
   - MATCH,🐟 漏网之鱼
 
 # =========================
