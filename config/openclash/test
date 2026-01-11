@@ -1,76 +1,259 @@
-;Custom_Clash_Rules
-;全分组防 DNS 泄漏订阅转换模板
-;作者：https://github.com/Aethersailor
-;项目地址：https://github.com/Aethersailor/Custom_Clash_Rules
-;该订阅模板为 Custom_OpenClash_Rules 项目的衍生项目
-;基于 ACL4SSR 模板魔改而来，感谢原作者！
+# Clash Meta (Mihomo) 配置文件
+# 修复：精准排除特定落地节点，放行通用 Reality 节点作为跳板
 
-;轻量版分流规则
-;仅包含基本的国内/国外分流功能，包含一些基本的直连规则，其余网站和IP全部代理
-;适合不需要解锁和分流需求的用户
+port: 7890
+socks-port: 7891
+mixed-port: 7893
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: true
+external-controller: 0.0.0.0:9090
 
-[custom]
-;设置规则标志位
-;以下规则，按照从上往下的顺序遍历，优先命中上位规则，规则重复无影响
-;修改顺序会影响分流效果
+# =========================
+# 1. 代理集合
+# =========================
+proxy-providers:
+  All_Subscription:
+    type: http
+    # 👇👇👇 记得填入你的完整订阅链接 👇👇👇
+    url: "http://192.168.1.16:3001/DKzw7DRF8m92CeQnb3rg/download/collection/all?target=ClashMeta"
+    interval: 3600
+    path: ./proxies/all_sub.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: https://cp.cloudflare.com/generate_204
 
-;建议使用 Loyalsoldier 版本的 GeoSite 和 GeoIP 数据库
+# =========================
+# 2. 规则集合
+# =========================
+rule-providers:
+  Flying_Direct:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/flying864/rule/refs/heads/main/config/openclash/Direct"
+    path: ./rules/Flying_Direct.yaml
+    interval: 28800
 
-ruleset=🎯 全球直连,[]GEOSITE,private
-ruleset=🎯 全球直连,[]GEOIP,private,no-resolve
-ruleset=🎯 全球直连,https://raw.githubusercontent.com/flying864/rule/refs/heads/main/config/openclash/Direct,28800
-ruleset=🎯 全球直连,https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Custom_Direct.list,28800
-ruleset=🚀 手动选择,https://raw.githubusercontent.com/flying864/rule/refs/heads/main/config/openclash/Proxy,28800
-ruleset=🚀 手动选择,https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Custom_Proxy.list,28800
-ruleset=🎯 全球直连,[]GEOSITE,google-cn
-ruleset=🎯 全球直连,[]GEOSITE,category-games@cn
-ruleset=🎯 全球直连,https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Steam_CDN.list,28800
-ruleset=🎯 全球直连,[]GEOSITE,category-game-platforms-download
-ruleset=🎯 全球直连,[]GEOSITE,category-public-tracker
-ruleset=🎯 全球直连,[]GEOSITE,speedtest
-ruleset=🎥 Netflix,[]GEOSITE,netflix
-ruleset=🎥 Netflix,[]GEOIP,netflix,no-resolve
-ruleset=🍎 苹果服务,[]GEOSITE,apple
-ruleset=Ⓜ️ 微软服务,[]GEOSITE,microsoft
-ruleset=📢 谷歌FCM,[]GEOSITE,googlefcm
-ruleset=🇬 谷歌服务,[]GEOSITE,google
-ruleset=🚀 手动选择,[]GEOSITE,gfw
-ruleset=🇬 谷歌服务,[]GEOIP,google,no-resolve
-ruleset=🎯 全球直连,[]GEOSITE,cn
-ruleset=🎯 全球直连,[]GEOIP,cn,no-resolve
-ruleset=🐟 漏网之鱼,[]FINAL
-;设置规则标志位结束
+  Custom_Direct:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Custom_Direct.list"
+    path: ./rules/Custom_Direct.yaml
+    interval: 28800
 
-;设置节点分组标志位
-;节点地区分组参考本项目推荐机场而设立
-;注意：下方各策略组已加入德国、加拿大及RackNerd落地组
+  Flying_Proxy:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/flying864/rule/refs/heads/main/config/openclash/Proxy"
+    path: ./rules/Flying_Proxy.yaml
+    interval: 28800
 
-custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🇭🇰 香港节点`[]🇺🇸 美国节点`[]🇯🇵 日本节点`[]🇸🇬 新加坡节点`[]🇼🇸 台湾节点`[]🇰🇷 韩国节点`[]🇬🇧 英国节点`[]🇩🇪 德国节点`[]🇨🇦 加拿大节点`[]🛬 RackNerd落地`[]🌐 其他地区`.*
-custom_proxy_group=♻️ 自动选择`url-test`.*`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=📢 谷歌FCM`select`[]🚀 手动选择`[]♻️ 自动选择`[]🇭🇰 香港节点`[]🇺🇸 美国节点`[]🇯🇵 日本节点`[]🇸🇬 新加坡节点`[]🇼🇸 台湾节点`[]🇰🇷 韩国节点`[]🇬🇧 英国节点`[]🇩🇪 德国节点`[]🇨🇦 加拿大节点`[]🛬 RackNerd落地`[]🌐 其他地区`[]🎯 全球直连`.*
-custom_proxy_group=🇬 谷歌服务`select`[]🚀 手动选择`[]♻️ 自动选择`[]🇭🇰 香港节点`[]🇺🇸 美国节点`[]🇯🇵 日本节点`[]🇸🇬 新加坡节点`[]🇼🇸 台湾节点`[]🇰🇷 韩国节点`[]🇬🇧 英国节点`[]🇩🇪 德国节点`[]🇨🇦 加拿大节点`[]🛬 RackNerd落地`[]🌐 其他地区`[]🎯 全球直连`.*
-custom_proxy_group=🍎 苹果服务`select`[]🎯 全球直连`[]🇭🇰 香港节点`[]🇺🇸 美国节点`[]🇯🇵 日本节点`[]🇸🇬 新加坡节点`[]🇼🇸 台湾节点`[]🇰🇷 韩国节点`[]🇬🇧 英国节点`[]🇩🇪 德国节点`[]🇨🇦 加拿大节点`[]🛬 RackNerd落地`[]🌐 其他地区`[]🚀 手动选择`[]♻️ 自动选择`.*
-custom_proxy_group=Ⓜ️ 微软服务`select`[]🎯 全球直连`[]🇭🇰 香港节点`[]🇺🇸 美国节点`[]🇯🇵 日本节点`[]🇸🇬 新加坡节点`[]🇼🇸 台湾节点`[]🇰🇷 韩国节点`[]🇬🇧 英国节点`[]🇩🇪 德国节点`[]🇨🇦 加拿大节点`[]🛬 RackNerd落地`[]🌐 其他地区`[]🚀 手动选择`[]♻️ 自动选择`.*
-custom_proxy_group=🚀 测速工具`select`[]🎯 全球直连`[]🇭🇰 香港节点`[]🇺🇸 美国节点`[]🇯🇵 日本节点`[]🇸🇬 新加坡节点`[]🇼🇸 台湾节点`[]🇰🇷 韩国节点`[]🇬🇧 英国节点`[]🇩🇪 德国节点`[]🇨🇦 加拿大节点`[]🛬 RackNerd落地`[]🌐 其他地区`[]🚀 手动选择`[]♻️ 自动选择`.*
-custom_proxy_group=🎥 Netflix`select`[]🚀 手动选择`[]♻️ 自动选择`[]🇭🇰 香港节点`[]🇺🇸 美国节点`[]🇯🇵 日本节点`[]🇸🇬 新加坡节点`[]🇼🇸 台湾节点`[]🇰🇷 韩国节点`[]🇬🇧 英国节点`[]🇩🇪 德国节点`[]🇨🇦 加拿大节点`[]🛬 RackNerd落地`[]🌐 其他地区`[]🎯 全球直连`.*
-custom_proxy_group=🐟 漏网之鱼`select`[]🚀 手动选择`[]♻️ 自动选择`[]🇭🇰 香港节点`[]🇺🇸 美国节点`[]🇯🇵 日本节点`[]🇸🇬 新加坡节点`[]🇼🇸 台湾节点`[]🇰🇷 韩国节点`[]🇬🇧 英国节点`[]🇩🇪 德国节点`[]🇨🇦 加拿大节点`[]🛬 RackNerd落地`[]🌐 其他地区`[]🎯 全球直连`.*
+  Custom_Proxy:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Custom_Proxy.list"
+    path: ./rules/Custom_Proxy.yaml
+    interval: 28800
 
-;地区节点定义
-custom_proxy_group=🇭🇰 香港节点`url-test`(港|HK|hk|Hong Kong|HongKong|hongkong|深港)`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=🇺🇸 美国节点`url-test`(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates)`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=🇯🇵 日本节点`url-test`(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|[^-]日|JP|Japan|🇯🇵)`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=🇸🇬 新加坡节点`url-test`(新加坡|坡|狮城|SG|Singapore)`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=🇼🇸 台湾节点`url-test`(台|新北|彰化|TW|Taiwan)`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=🇰🇷 韩国节点`url-test`(KR|Korea|KOR|首尔|韩|韓)`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=🇬🇧 英国节点`url-test`(英国|Great Britain)`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=🇩🇪 德国节点`url-test`(德|Germany|DE)`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=🇨🇦 加拿大节点`url-test`(加|Canada|CA|Montreal|Vancouver)`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=🛬 RackNerd落地`url-test`(racknerd|RackNerd)`https://cp.cloudflare.com/generate_204`300,,50
-custom_proxy_group=🎯 全球直连`select`[]DIRECT
-;修改了Other正则，排除德、加
-custom_proxy_group=🌐 其他地区`url-test`(^(?!.*(港|HK|hk|Hong Kong|HongKong|hongkong|深港|美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States|UnitedStates|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|[^-]日|JP|Japan|🇯🇵|新加坡|坡|狮城|SG|Singapore|台|新北|彰化|TW|Taiwan|KR|Korea|KOR|首尔|韩|韓|英国|Great Britain|德|Germany|DE|加|Canada|CA|Montreal|Vancouver)).*)`https://cp.cloudflare.com/generate_204`300,,50
-;设置分组标志位
+  Steam_CDN:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/Aethersailor/Custom_OpenClash_Rules/main/rule/Steam_CDN.list"
+    path: ./rules/Steam_CDN.yaml
+    interval: 28800
 
-;下方参数请勿修改
-enable_rule_generator=true
-overwrite_original_rules=true
+# =========================
+# 3. 策略组 (精准防回环)
+# =========================
+proxy-groups:
+  # --- 主入口 ---
+  - name: "🚀 手动选择"
+    type: select
+    proxies:
+      - "♻️ 自动选择"
+      - "🛬 落地节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇸 美国节点"
+      - "🇯🇵 日本节点"
+      - "🇰🇷 韩国节点"
+      - "🇸🇬 新加坡节点"
+      - "🇩🇪 德国节点"
+      - "🌐 其他地区"
+      - "DIRECT"
+
+  - name: "♻️ 自动选择"
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    tolerance: 50
+    use:
+      - All_Subscription
+    # 排除 RackNerd 和 特定的日韩落地节点
+    filter: "^(?!.*(?i)(racknerd|jp-Reality|kr-Reality)).*"
+
+  # --- 落地组 ---
+  - name: "🛬 落地节点"
+    type: select
+    use:
+      - All_Subscription
+    # 只提取 RackNerd 以及你指定的两个 Reality 节点
+    filter: "(?i)(racknerd|jp-Reality|kr-Reality)"
+
+  # --- 跳板组 (精准排除) ---
+  
+  # 香港跳板
+  - name: "🇭🇰 香港节点"
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    tolerance: 50
+    use:
+      - All_Subscription
+    # 筛选香港节点，但排除掉那三个落地节点
+    filter: "(?i)(港|HK|Hong Kong)(?!.*(racknerd|jp-Reality|kr-Reality))"
+
+  # 美国跳板
+  - name: "🇺🇸 美国节点"
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    use:
+      - All_Subscription
+    filter: "(?i)(美|US|United States)(?!.*(racknerd|jp-Reality|kr-Reality))"
+
+  # 日本跳板 (允许普通 Japan Reality，只拒绝 jp-Reality)
+  - name: "🇯🇵 日本节点"
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    use:
+      - All_Subscription
+    filter: "(?i)(日本|JP|Japan)(?!.*(racknerd|jp-Reality|kr-Reality))"
+
+  # 韩国跳板 (允许普通 Korea Reality，只拒绝 kr-Reality)
+  - name: "🇰🇷 韩国节点"
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    use:
+      - All_Subscription
+    filter: "(?i)(韩国|KR|Korea)(?!.*(racknerd|jp-Reality|kr-Reality))"
+
+  - name: "🇸🇬 新加坡节点"
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    use:
+      - All_Subscription
+    filter: "(?i)(新加坡|SG|Singapore)(?!.*(racknerd|jp-Reality|kr-Reality))"
+    
+  - name: "🇩🇪 德国节点"
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    use:
+      - All_Subscription
+    filter: "(?i)(德|Germany|DE)(?!.*(racknerd|jp-Reality|kr-Reality))"
+
+  # --- 功能组 ---
+  - name: "🎥 Netflix"
+    type: select
+    proxies:
+      - "🚀 手动选择"
+      - "🛬 落地节点"
+      - "🇭🇰 香港节点"
+      - "🇸🇬 新加坡节点"
+      - "🇯🇵 日本节点"
+      - "🇰🇷 韩国节点"
+
+  - name: "🍎 苹果服务"
+    type: select
+    proxies:
+      - "DIRECT"
+      - "🚀 手动选择"
+
+  - name: "Ⓜ️ 微软服务"
+    type: select
+    proxies:
+      - "DIRECT"
+      - "🚀 手动选择"
+
+  - name: "📢 谷歌FCM"
+    type: select
+    proxies:
+      - "🚀 手动选择"
+      - "🇺🇸 美国节点"
+      - "🇭🇰 香港节点"
+
+  - name: "🇬 谷歌服务"
+    type: select
+    proxies:
+      - "🚀 手动选择"
+      - "🛬 落地节点"
+      - "🇭🇰 香港节点"
+      - "🇺🇸 美国节点"
+
+  - name: "🐟 漏网之鱼"
+    type: select
+    proxies:
+      - "🚀 手动选择"
+      - "DIRECT"
+
+  - name: "🌐 其他地区"
+    type: select
+    proxies:
+      - "DIRECT"
+    use:
+      - All_Subscription
+    # 排除所有已知地区和落地节点
+    filter: "^(?!.*(?i)(港|HK|美|US|日本|JP|新加坡|SG|德|DE|韩|KR|racknerd|jp-Reality|kr-Reality)).*"
+
+# =========================
+# 4. 分流规则 (已修复 GEOIP 报错)
+# =========================
+rules:
+  # --- 直连规则 (局域网防回环) ---
+  - GEOSITE,private,DIRECT
+  # 👇 删除了报错的 GEOIP,private，改用更稳定的 IP-CIDR 写法
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+  - IP-CIDR6,::1/128,DIRECT,no-resolve
+  - IP-CIDR6,fc00::/7,DIRECT,no-resolve
+  
+  # --- 外部规则集 ---
+  - RULE-SET,Flying_Direct,DIRECT
+  - RULE-SET,Custom_Direct,DIRECT
+  
+  # --- 常用直连 ---
+  - GEOSITE,google-cn,DIRECT
+  - GEOSITE,category-games@cn,DIRECT
+  - RULE-SET,Steam_CDN,DIRECT
+  - GEOSITE,category-game-platforms-download,DIRECT
+  - GEOSITE,category-public-tracker,DIRECT
+  - GEOSITE,speedtest,DIRECT
+  - GEOSITE,cn,DIRECT
+  - GEOIP,cn,DIRECT,no-resolve
+
+  # --- 代理/分流规则 ---
+  - RULE-SET,Flying_Proxy,🚀 手动选择
+  - RULE-SET,Custom_Proxy,🚀 手动选择
+  
+  - GEOSITE,netflix,🎥 Netflix
+  - GEOIP,netflix,🎥 Netflix,no-resolve
+  
+  - GEOSITE,apple,🍎 苹果服务
+  - GEOSITE,microsoft,Ⓜ️ 微软服务
+  - GEOSITE,googlefcm,📢 谷歌FCM
+  
+  - GEOSITE,google,🇬 谷歌服务
+  - GEOIP,google,🇬 谷歌服务,no-resolve
+  
+  - GEOSITE,gfw,🚀 手动选择
+
+  # --- 兜底 ---
+  - MATCH,🐟 漏网之鱼
