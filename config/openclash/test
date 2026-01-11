@@ -34,7 +34,7 @@ proxy-providers:
     type: http
     # 👇👇👇 你的内网订阅链接 👇👇👇
     url: "http://192.168.1.16:3001/DKzw7DRF8m92CeQnb3rg/download/collection/all?target=ClashMeta"
-    interval: 3600
+    interval: 86400
     path: ./proxies/all_sub.yaml
     health-check: *provider-check  # 👈 引用上面的锚点，代替重复代码
 
