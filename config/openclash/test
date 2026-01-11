@@ -1,6 +1,6 @@
 # Clash Meta (Mihomo) 配置文件
-# 修复：精准排除特定落地节点，放行通用 Reality 节点作为跳板
-# 新增：英国、加拿大、台湾节点
+# 修改：Netflix 组改为自动筛选含“流媒体/Netflix”关键字的具体节点
+# 功能：链式代理防回环 + 英国/加拿大/台湾节点 + DNS防泄漏
 
 port: 7890
 socks-port: 7891
@@ -19,7 +19,7 @@ proxy-providers:
     type: http
     # 👇👇👇 保持你的内网订阅链接不变 👇👇👇
     url: "http://192.168.1.16:3001/DKzw7DRF8m92CeQnb3rg/download/collection/all?target=ClashMeta"
-    interval: 3600
+    interval: 86400
     path: ./proxies/all_sub.yaml
     health-check:
       enable: true
@@ -66,7 +66,7 @@ rule-providers:
     interval: 28800
 
 # =========================
-# 3. 策略组 (精准防回环)
+# 3. 策略组
 # =========================
 proxy-groups:
   # --- 主入口 ---
@@ -94,7 +94,6 @@ proxy-groups:
     tolerance: 50
     use:
       - All_Subscription
-    # 排除 RackNerd 和 特定的日韩落地节点
     filter: "^(?!.*(?i)(racknerd|jp-Reality|kr-Reality)).*"
 
   # --- 落地组 ---
@@ -102,10 +101,9 @@ proxy-groups:
     type: select
     use:
       - All_Subscription
-    # 只提取 RackNerd 以及你指定的两个 Reality 节点
     filter: "(?i)(racknerd|jp-Reality|kr-Reality)"
 
-  # --- 跳板组 (精准排除) ---
+  # --- 跳板组 ---
   
   # 香港跳板
   - name: "🇭🇰 香港节点"
@@ -115,10 +113,9 @@ proxy-groups:
     tolerance: 50
     use:
       - All_Subscription
-    # 筛选香港节点，但排除掉那三个落地节点
     filter: "(?i)(港|HK|Hong Kong)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 台湾跳板 (新增)
+  # 台湾跳板
   - name: "🇼🇸 台湾节点"
     type: url-test
     url: https://cp.cloudflare.com/generate_204
@@ -163,7 +160,7 @@ proxy-groups:
       - All_Subscription
     filter: "(?i)(新加坡|SG|Singapore)(?!.*(racknerd|jp-Reality|kr-Reality))"
   
-  # 英国跳板 (新增)
+  # 英国跳板
   - name: "🇬🇧 英国节点"
     type: url-test
     url: https://cp.cloudflare.com/generate_204
@@ -172,7 +169,7 @@ proxy-groups:
       - All_Subscription
     filter: "(?i)(英国|UK|Great Britain)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
-  # 加拿大跳板 (新增)
+  # 加拿大跳板
   - name: "🇨🇦 加拿大节点"
     type: url-test
     url: https://cp.cloudflare.com/generate_204
@@ -191,19 +188,13 @@ proxy-groups:
     filter: "(?i)(德|Germany|DE)(?!.*(racknerd|jp-Reality|kr-Reality))"
 
   # --- 功能组 ---
+  
+  # 👇 修改处：不添加分组，只筛选含“流媒体”或“Netflix”关键字的节点
   - name: "🎥 Netflix"
     type: select
-    proxies:
-      - "🚀 手动选择"
-      - "🛬 落地节点"
-      - "🇭🇰 香港节点"
-      - "🇼🇸 台湾节点"
-      - "🇸🇬 新加坡节点"
-      - "🇯🇵 日本节点"
-      - "🇰🇷 韩国节点"
-      - "🇬🇧 英国节点"
-      - "🇨🇦 加拿大节点"
-      - "🇺🇸 美国节点"
+    use:
+      - All_Subscription
+    filter: "(?i)(流媒体|Netflix)"
 
   - name: "🍎 苹果服务"
     type: select
@@ -248,16 +239,14 @@ proxy-groups:
       - "DIRECT"
     use:
       - All_Subscription
-    # 排除所有已知地区和落地节点 (加入了英、加、台的关键字)
     filter: "^(?!.*(?i)(港|HK|美|US|日本|JP|新加坡|SG|德|DE|韩|KR|英|UK|加|CA|台|TW|racknerd|jp-Reality|kr-Reality)).*"
 
 # =========================
-# 4. 分流规则 (已修复 GEOIP 报错)
+# 4. 分流规则
 # =========================
 rules:
-  # --- 直连规则 (局域网防回环) ---
+  # --- 直连规则 ---
   - GEOSITE,private,DIRECT
-  # IP-CIDR 写法
   - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
   - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
@@ -298,3 +287,37 @@ rules:
 
   # --- 兜底 ---
   - MATCH,🐟 漏网之鱼
+
+# =========================
+# 5. DNS 设置
+# =========================
+dns:
+  enable: true
+  ipv6: true
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+  
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+    - https://208.67.222.222/dns-query
+    - tls://1.0.0.1:853
+    - tls://8.8.4.4:853
+
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
