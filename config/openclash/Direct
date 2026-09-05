@@ -11,4 +11,7 @@ DOMAIN-SUFFIX, digicert.com
 DOMAIN-SUFFIX, riotcdn.net
 DOMAIN-SUFFIX, tofba.com
 DOMAIN-SUFFIX, mcbi.top
+DOMAIN-SUFFIX, epson.com
+DOMAIN-SUFFIX, epsonconnect.com
+DOMAIN-SUFFIX, ye.c.lencr.org
 #IP-CIDR, 1.2.3.4/32, no-resolve
