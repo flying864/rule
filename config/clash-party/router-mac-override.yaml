@@ -359,11 +359,13 @@ rule-providers:
     path: ./ruleset/router-mac/rule-43.mrs
 proxy-groups:
 - name: 节点选择
+  icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Static.png
   type: select
   proxies:
   - DIRECT
   include-all: true
 - name: 自动选择
+  icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Urltest.png
   type: url-test
   url: https://www.gstatic.com/generate_204
   interval: 300
@@ -371,6 +373,7 @@ proxy-groups:
   lazy: true
   include-all: true
 - name: 流媒体
+  icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Streaming.png
   type: select
   filter: 流媒体|LMT
   proxies:
@@ -379,6 +382,7 @@ proxy-groups:
   empty-fallback: REJECT
   include-all: true
 - name: YouTube
+  icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/YouTube.png
   type: select
   proxies:
   - 自动选择
@@ -386,6 +390,7 @@ proxy-groups:
   - DIRECT
   include-all: true
 - name: AI
+  icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/OpenAI.png
   type: select
   filter: (?i)(美|美国|US|USA|United States|America|洛杉矶|西雅图|纽约|硅谷)
   proxies:
@@ -394,9 +399,11 @@ proxy-groups:
   empty-fallback: REJECT
   include-all: true
 - name: Docker
+  icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/box.png
   type: select
   include-all: true
 - name: 国外
+  icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Global.png
   type: select
   proxies:
   - 自动选择
@@ -404,6 +411,7 @@ proxy-groups:
   - DIRECT
   - REJECT
 - name: 其他
+  icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Final.png
   type: select
   proxies:
   - 自动选择
