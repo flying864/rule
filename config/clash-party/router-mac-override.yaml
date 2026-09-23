@@ -1,9 +1,7 @@
 # 本地 Clash Party YAML override
-# 绑定订阅前请禁用旧的布丁狗 override；节点由现有订阅提供。
 # 本文件不与路由器组选择同步；AI 请选择 US 节点，流媒体请选择名称匹配 流媒体|LMT 的节点。
 # 以 REJECT 开头的组需要手动选择，否则会有意阻断。
 # 不自动更新策略快照；规则提供者保留其 interval。Mac DNS/TUN 仍由本机管理。
-# 不保证已测试 Mac 运行时。
 rules:
 - RULE-SET,Private / Domain,DIRECT
 - RULE-SET,Private / IP,DIRECT,no-resolve
