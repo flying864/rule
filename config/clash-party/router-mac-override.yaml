@@ -39,7 +39,7 @@ rules:
 - RULE-SET,Disney / Domain,流媒体
 - RULE-SET,HBO / Domain,流媒体
 - RULE-SET,Spotify / Domain,流媒体
-- RULE-SET,Twitch / Domain,流媒体
+- RULE-SET,Twitch / Domain,Twitch
 - RULE-SET,Steam / Domain,国外
 - RULE-SET,Epic / Domain,国外
 - RULE-SET,EA / Domain,国外
@@ -255,6 +255,15 @@ proxy-groups:
   icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Streaming.png
   type: select
   filter: 流媒体|LMT
+  proxies:
+  - REJECT
+  exclude-type: direct|compatible
+  empty-fallback: REJECT
+  include-all: true
+- name: Twitch
+  icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Twitch.png
+  type: select
+  filter: (?i)(流媒体|LMT)
   proxies:
   - REJECT
   exclude-type: direct|compatible
