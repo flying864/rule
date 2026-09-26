@@ -261,12 +261,10 @@ proxy-groups:
   empty-fallback: REJECT
   include-all: true
 - name: Twitch
-  icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Twitch.png
+  icon: https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Twitch.png
   type: select
-  filter: (?i)(流媒体|LMT)
   proxies:
   - REJECT
-  exclude-type: direct|compatible
   empty-fallback: REJECT
   include-all: true
 - name: YouTube
