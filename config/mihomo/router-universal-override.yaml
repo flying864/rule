@@ -1,19 +1,20 @@
-# Mihomo 通用覆写 | Windows / macOS / Android | Sub-Store
-# 保留原版规则顺序、44 个规则提供者与 9 个策略组。
-# 规则提供者采用单行映射，避免 YAML 锚点/合并键导致字段丢失。
-# 系统代理、TUN、DNS 由各客户端独立配置。
+# Mihomo 优化覆写 | Windows / macOS / Android | Sub-Store
+# 保留 44 个规则提供者与 9 个策略组；Direct 提前于 NonCN UDP443，移除一条冗余 Docker 精确规则。
+# 优化 AI 标签过滤与首次选择；其余规则保持相对顺序，规则提供者采用紧凑单行映射，无锚点。
+# 这是完整覆写文件，不是完整节点订阅；需与节点订阅合并，并检查客户端字段覆盖行为。
+# 系统代理、DNS、TUN 由客户端独立控制；本文件不新增顶层 proxies、DNS、controller 或 listeners。
 
 rules:
   - RULE-SET,Private / Domain,DIRECT
   - RULE-SET,Private / IP,DIRECT,no-resolve
+  - RULE-SET,Direct / Domain,DIRECT
   - AND,((RULE-SET,NonCN / Domain),(NETWORK,UDP),(DST-PORT,443)),REJECT
   - DOMAIN-SUFFIX,docker.com,Docker
   - DOMAIN-SUFFIX,docker.io,Docker
   - DOMAIN-SUFFIX,dockerhub.com,Docker
   - DOMAIN-SUFFIX,dockerstatic.com,Docker
+  # cdn.auth0.com 是共享 CDN；此处明确将该精确域名路由至 Docker，可能影响其他登录。
   - DOMAIN,cdn.auth0.com,Docker
-  - DOMAIN,production.cloudflare.docker.com,Docker
-  - RULE-SET,Direct / Domain,DIRECT
   - RULE-SET,Block / Domain,REJECT
   - RULE-SET,ChatGPT / Domain,AI
   - RULE-SET,Claude / Domain,AI
@@ -95,6 +96,7 @@ rule-providers:
   China / Domain: {type: http, interval: 86400, behavior: domain, format: mrs, url: 'https://gh-proxy.com/github.com/metacubex/meta-rules-dat/raw/refs/heads/meta/geo/geosite/cn.mrs', path: ./ruleset/router-universal/rule-35.mrs}
   China / IP: {type: http, interval: 86400, behavior: ipcidr, format: mrs, url: 'https://gh-proxy.com/github.com/metacubex/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs', path: ./ruleset/router-universal/rule-36.mrs}
   Private / Domain: {type: http, interval: 86400, behavior: domain, format: mrs, url: 'https://gh-proxy.com/github.com/metacubex/meta-rules-dat/raw/refs/heads/meta/geo/geosite/private.mrs', path: ./ruleset/router-universal/rule-37.mrs}
+  # 审计时为空白的合法占位，保留；当前不是广告过滤器。
   Block / Domain: {type: http, interval: 86400, behavior: classical, format: text, url: 'https://gh-proxy.com/raw.githubusercontent.com/flying864/rule/refs/heads/main/config/openclash/Block', path: ./ruleset/router-universal/rule-38.list}
   Youtube / Domain: {type: http, interval: 86400, behavior: domain, format: mrs, url: 'https://gh-proxy.com/github.com/metacubex/meta-rules-dat/raw/refs/heads/meta/geo/geosite/youtube.mrs', path: ./ruleset/router-universal/rule-39.mrs}
   Google / Domain: {type: http, interval: 86400, behavior: domain, format: mrs, url: 'https://gh-proxy.com/github.com/metacubex/meta-rules-dat/raw/refs/heads/meta/geo/geosite/google.mrs', path: ./ruleset/router-universal/rule-40.mrs}
@@ -122,7 +124,7 @@ proxy-groups:
     icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Streaming.png
     type: select
     filter: 流媒体|LMT
-    proxies: [REJECT]
+    # 无已保存选择时选首个合格节点，空列表仍拒绝；已有选择可能需重置或手动选择。
     exclude-type: direct|compatible
     empty-fallback: REJECT
     include-all: true
@@ -130,7 +132,7 @@ proxy-groups:
   - name: Twitch
     icon: https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Twitch.png
     type: select
-    proxies: [REJECT]
+    # 无已保存选择时选首个合格节点，空列表仍拒绝；已有选择可能需重置或手动选择。
     empty-fallback: REJECT
     include-all: true
 
@@ -143,8 +145,9 @@ proxy-groups:
   - name: AI
     icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/OpenAI.png
     type: select
-    filter: (?i)(美|美国|US|USA|United States|America|洛杉矶|西雅图|纽约|硅谷)
-    proxies: [REJECT]
+    # 正则仅匹配节点标签，优先使用美国全名/城市；未包含美01等简写，不认证真实出口。
+    filter: '(?i)(美国|美國|洛杉矶|洛杉磯|西雅图|西雅圖|纽约|紐約|硅谷|矽谷|芝加哥|达拉斯|達拉斯|圣何塞|聖荷西|🇺🇸|(^|[^A-Za-z])(US|USA|United[ _-]*States|America)([^A-Za-z]|$))'
+    # 无已保存选择时选首个合格节点，空列表仍拒绝；已有选择可能需重置或手动选择。
     exclude-type: direct|compatible
     empty-fallback: REJECT
     include-all: true
@@ -152,6 +155,7 @@ proxy-groups:
   - name: Docker
     icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/box.png
     type: select
+    proxies: [自动选择, 节点选择]
     include-all: true
 
   - name: 国外
