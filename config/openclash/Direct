@@ -14,4 +14,8 @@ DOMAIN-SUFFIX, mcbi.top
 DOMAIN-SUFFIX, epson.com
 DOMAIN-SUFFIX, epsonconnect.com
 DOMAIN-SUFFIX, ye.c.lencr.org
+DOMAIN-SUFFIX,synology.com,DIRECT
+DOMAIN-SUFFIX,synologydownload.com,DIRECT
+DOMAIN-SUFFIX,synologyupdate.com,DIRECT
+DOMAIN-SUFFIX,synology.cn,DIRECT
 #IP-CIDR, 1.2.3.4/32, no-resolve
