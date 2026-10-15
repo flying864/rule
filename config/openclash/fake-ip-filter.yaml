@@ -1,4 +1,57 @@
+# 规则提供器格式：behavior: domain / format: yaml；唯一顶层字段为 payload。
+# GitHub 沿用已有兼容性范围，并非通用故障结论。
+# NTP 为预防性兼容例外，而非已测故障；本列表不改变 UDP 分流。
+# 真实 IP 不代表直连，实际出口仍由路由规则决定。
+# 本地域名与私有 DNS 应在本地主配置独立维护，不能仅依赖远程规则。
+# 不要泛化到 Google、Apple 或 CDN 全域；候选仅遇到相关问题并诊断后再启用。
 payload:
+  # GitHub：沿用已有范围。
   - '+.github.com'
   - '+.githubusercontent.com'
   - '+.githubassets.com'
+  # NTP：适度预防性兼容例外。
+  - 'time.windows.com'
+  - 'time.apple.com'
+  - 'time-ios.apple.com'
+  - 'time.google.com'
+  - 'time.cloudflare.com'
+  - 'time.nist.gov'
+  - 'time.android.com'
+  - '+.pool.ntp.org'
+
+  # 候选：联网检测/门户检测，仅遇到相关问题再启用。
+  # - '+.msftconnecttest.com'
+  # - '+.msftncsi.com'
+  # - 'captive.apple.com'
+  # - 'connectivitycheck.gstatic.com'
+  # - 'connectivitycheck.android.com'
+  # - 'detectportal.firefox.com'
+  # - 'networkcheck.kde.org'
+
+  # 候选：STUN 精确公共服务器，仅遇到相关问题再启用，不改变 UDP 分流。
+  # - 'stun.l.google.com'
+  # - 'stun1.l.google.com'
+  # - 'stun2.l.google.com'
+  # - 'stun3.l.google.com'
+  # - 'stun4.l.google.com'
+
+  # 候选：Nintendo 网络测试与下载，仅遇到相关问题再启用。
+  # - '+.srv.nintendo.net'
+  # - '+.cdn.nintendo.net'
+  # - 'conntest.nintendowifi.net'
+
+  # 候选：Xbox 通知，仅遇到相关问题再启用。
+  # - 'xnotify.xboxlive.com'
+
+  # 候选：Steam 内容下载，仅遇到相关问题再启用。
+  # - '+.steamcontent.com'
+
+  # 候选：Apple 更新查询，仅遇到相关问题再启用，不扩大到 Apple 全域。
+  # - 'mesu.apple.com'
+  # - 'swscan.apple.com'
+  # - 'swquery.apple.com'
+
+  # 候选：其他公共域名（设备心跳、动态 DNS、应用），仅遇到相关问题再启用。
+  # - 'heartbeat.belkin.com'
+  # - '+.dynv6.net'
+  # - '+.uu.163.com'
