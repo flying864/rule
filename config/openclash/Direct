@@ -19,4 +19,5 @@ DOMAIN-SUFFIX,synologydownload.com,DIRECT
 DOMAIN-SUFFIX,synologyupdate.com,DIRECT
 DOMAIN-SUFFIX,synology.cn,DIRECT
 DOMAIN-SUFFIX,battlenet.com.cn,DIRECT
+DOMAIN-SUFFIX,blzstatic.cn,DIRECT
 #IP-CIDR, 1.2.3.4/32, no-resolve
