@@ -18,6 +18,8 @@ payload:
   - 'time.nist.gov'
   - 'time.android.com'
   - '+.pool.ntp.org'
+  # mc服务器
+  - '+.123883.xyz'
 
   # 候选：联网检测/门户检测，仅遇到相关问题再启用。
   # - '+.msftconnecttest.com'
