@@ -1,0 +1,7 @@
+# 精确匹配 Netflix AWS 接口与风控主机；不把整个 amazonaws.com/cloudfront.net 当成 Netflix
+DOMAIN-REGEX,(^|\.)apiproxy-device-prod-nlb-.+\.amazonaws\.com$
+DOMAIN-REGEX,(^|\.)apiproxy-website-nlb-prod-.+\.amazonaws\.com$
+DOMAIN-REGEX,(^|\.)dualstack\.apiproxy-.+\.amazonaws\.com$
+DOMAIN-REGEX,(^|\.)dualstack\.ichnaea-web-.+\.amazonaws\.com$
+DOMAIN,h-netflix.online-metrix.net
+DOMAIN,e13252.dscg.akamaiedge.net

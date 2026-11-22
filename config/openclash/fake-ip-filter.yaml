@@ -18,9 +18,16 @@ payload:
   - 'time.nist.gov'
   - 'time.android.com'
   - '+.pool.ntp.org'
-  # mc服务器
+  # Cloudflare Tunnel：避免 7844 端口长连接受 Fake-IP 映射缓存影响。
+  - '+.argotunnel.com'
+  - '+.trycloudflare.com'
+  # 邮件服务：IMAP/SMTP 客户端真实 IP 兼容。
+  - '+.gmail.com'
+  - '+.googlemail.com'
+  # 自有域名与 MC 服务器
   - '+.123883.xyz'
   - '+.fanho515.eu.org'
+  - '+.wonnow.eu.org'
 
   # 候选：联网检测/门户检测，仅遇到相关问题再启用。
   # - '+.msftconnecttest.com'

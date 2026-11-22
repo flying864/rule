@@ -15,11 +15,11 @@ DOMAIN-SUFFIX, mcbi.top
 DOMAIN-SUFFIX, epson.com
 DOMAIN-SUFFIX, epsonconnect.com
 DOMAIN-SUFFIX, ye.c.lencr.org
-DOMAIN-SUFFIX,synology.com,DIRECT
-DOMAIN-SUFFIX,synologydownload.com,DIRECT
-DOMAIN-SUFFIX,synologyupdate.com,DIRECT
-DOMAIN-SUFFIX,synology.cn,DIRECT
-DOMAIN-SUFFIX,battlenet.com.cn,DIRECT
-DOMAIN-SUFFIX,blzstatic.cn,DIRECT
-DOMAIN-SUFFIX,CloverPixel.com,DIRECT
+DOMAIN-SUFFIX, synology.com
+DOMAIN-SUFFIX, synologydownload.com
+DOMAIN-SUFFIX, synologyupdate.com
+DOMAIN-SUFFIX, synology.cn
+DOMAIN-SUFFIX, battlenet.com.cn
+DOMAIN-SUFFIX, blzstatic.cn
+DOMAIN-SUFFIX, CloverPixel.com
 #IP-CIDR, 1.2.3.4/32, no-resolve

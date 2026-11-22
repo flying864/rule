@@ -1,0 +1,7 @@
+# Docker 与主流容器镜像仓库补充域名（domainset 格式）
++.dockerstatic.com
+production.cloudflare.docker.com
++.ghcr.io
++.gcr.io
++.registry.k8s.io
++.quay.io

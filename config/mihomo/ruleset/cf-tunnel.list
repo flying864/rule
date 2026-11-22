@@ -1,0 +1,7 @@
+# Cloudflare Tunnel 边缘连接域名与官方 IPv4/IPv6 网段
+DOMAIN-SUFFIX,argotunnel.com
+DOMAIN-SUFFIX,trycloudflare.com
+IP-CIDR,198.41.192.0/24,no-resolve
+IP-CIDR,198.41.200.0/24,no-resolve
+IP-CIDR6,2606:4700:a0::/48,no-resolve
+IP-CIDR6,2606:4700:a8::/48,no-resolve
