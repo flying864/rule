@@ -1,10 +1,9 @@
-# Google Drive / Docs 与同步接口补充域名（domainset 格式）
+# Google Drive / Docs 与同步接口补充域名（domainset 格式；不含通用网关 www.googleapis.com）
 +.drive.google.com
 +.drive.usercontent.google.com
 +.drive.googleusercontent.com
 +.googledrive.com
 drive.googleapis.com
-www.googleapis.com
 +.docs.google.com
 +.docs.googleusercontent.com
 drive-data-export.usercontent.google.com
