@@ -100,8 +100,6 @@ def convert_proxy_group(
         empty_fb = out.get("empty-fallback")
         if empty_fb and str(empty_fb) not in proxies:
             proxies.append(str(empty_fb))
-        if not proxies and out.get("type") == "select":
-            proxies.append("REJECT")
 
     out["proxies"] = proxies
     return out
