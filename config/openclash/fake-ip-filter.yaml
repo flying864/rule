@@ -28,8 +28,9 @@ payload:
   # 邮件服务：IMAP/SMTP 客户端真实 IP 兼容。
   - '+.gmail.com'
   - '+.googlemail.com'
-  # 自有域名与 MC 服务器
-  - '+.123883.xyz'
+  # 自有域名与 MC 服务器（Tunnel 子域名保留 Fake-IP 走代理加速）
+  - '123883.xyz'
+  - '4.123883.xyz'
   - '+.fanho515.eu.org'
   - '+.wonnow.eu.org'
 
