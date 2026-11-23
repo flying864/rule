@@ -1,0 +1,41 @@
+name: Sync Template to Sub-Store
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "config/clash-party/router-mac-override.yaml"
+      - "scripts/sync_substore_template.py"
+      - ".github/workflows/sync-substore-template.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-substore-template
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Convert & Push to Sub-Store Cloudflare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Convert and push template to Sub-Store
+        env:
+          SUB_STORE_URL: "https://sub.fanco124.eu.org"
+          SUB_STORE_TEMPLATE_ID: "fanco-router-universal"
+          SUB_STORE_TEMPLATE_NAME: "Fanco 自定义分流（Mihomo）"
+          SUB_STORE_ADMIN_TOKEN: ${{ secrets.SUB_STORE_ADMIN_TOKEN }}
+        run: python scripts/sync_substore_template.py
