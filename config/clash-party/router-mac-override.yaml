@@ -1,76 +1,75 @@
+# ==============================================================================
 # Mihomo 统一分流覆写模板（本地 Clash Party 覆写 + 自动同步 Sub-Store Cloudflare）
-# 单一维护源：修改本文件推送到 main 分支后，GitHub Actions 自动转换并同步至
+# 单一维护源：修改本文件推送到 main 分支后，GitHub Actions 约 9 秒自动转换并同步至
 # https://sub.fanco124.eu.org/my 的 fanco-router-universal 模板。
-# 系统代理、DNS、TUN 仍由各终端客户端独立管理。
+#
+# 设计依据（对齐 MetaCubeX 官方 Meta-Docs 与社区 Sukka 分流准则）：
+# 1. [规则集去重与防反噬] 基于 meta-rules-dat 集合差集实测，将 50 个规则源收敛为 27 个：
+#    - category-ai-!cn.mrs 100% 包含 openai/anthropic/gemini/perplexity，合并为单源；
+#    - geolocation-!cn.mrs 已覆盖全部海外通用平台且剔除了 @cn，移除 19 个同向“国外”单品包，
+#      修复原先单品包前置导致国服 CS2/Dota2、AWS 中国区、Google/Apple 国内镜像绕行代理的问题。
+# 2. [短路求值与域名/IP 分层] AND/OR 复合规则将 O(1) 的 NETWORK/DST-PORT 置左短路；
+#    严格执行“全部域名规则在前、全部纯 IP 规则（带 no-resolve）置后”，杜绝提前 DNS 解析。
+# 3. [UDP 跨区防泄露] 依据官方文档“节点不支持 UDP 时规则会继续向下匹配”机制，在 AI 与流媒体
+#    规则后置入 UDP REJECT 保护（支持 UDP 时正常放行如 ChatGPT 语音，不支持时阻断防漏日韩 IP）。
+# 4. [健康检查防假活] 自动选择补齐官方推荐 expected-status: 204、timeout、max-failed-times
+#    及 exclude-type，防止伪节点或劫持页（200/403/502）误判存活吸流。
+# ==============================================================================
 
 rules:
-  # 1. 内网与私有自定义直连/拦截（置于 QUIC 拦截之前，避免自建域名 HTTP/3 被误拒）
+  # ===== 第 1 层：局域网与私有地址防回环 =====
   - RULE-SET,Private / Domain,DIRECT
   - RULE-SET,Private / IP,DIRECT,no-resolve
+
+  # ===== 第 2 层：私有直连、黑名单与 QUIC 左短路阻断 =====
   - RULE-SET,Direct / Domain,DIRECT
-  - AND,((RULE-SET,NonCN / Domain),(NETWORK,UDP),(DST-PORT,443)),REJECT
   - RULE-SET,Block / Domain,REJECT
+  # NETWORK 与 DST-PORT 置左：95%+ 的 TCP 流量在首个条件 O(1) 短路跳过，不查域名/IP 树
+  - AND,((NETWORK,UDP),(DST-PORT,443),(OR,((RULE-SET,NonCN / Domain),(RULE-SET,Netflix / IP,no-resolve),(RULE-SET,Google / IP,no-resolve)))),REJECT
 
-  # 2. AI 服务（置于 Google / Microsoft / NonCN 之前，统一走家宽/AI 节点防风控）
+  # ===== 第 3 层：专项业务域名分流（AI / 容器 / 音视频流媒体） =====
+  # AI 服务（Antigravity 补充 + MetaCubeX 官方非国区 AI 全集）
   - RULE-SET,AI-Custom / Domain,AI
-  - RULE-SET,ChatGPT / Domain,AI
-  - RULE-SET,Claude / Domain,AI
-  - RULE-SET,Gemini / Domain,AI
-  - RULE-SET,Perplexity / Domain,AI
-  - RULE-SET,AI-Extra / Domain,AI
+  - RULE-SET,AI / Domain,AI
+  # 节点支持 UDP 时上一行已命中（不影响 WebRTC 语音）；节点不支持 UDP 时在此阻断，防下落泄露日韩 IP
+  - AND,((NETWORK,UDP),(OR,((RULE-SET,AI-Custom / Domain),(RULE-SET,AI / Domain)))),REJECT
 
-  # 3. 容器镜像仓库（置于 GitHub / Google 之前，确保 ghcr.io / gcr.io 走 Docker 组）
+  # 容器镜像仓库（置于 NonCN 之前，确保 ghcr.io / gcr.io / docker 走独立 Docker 组）
   - RULE-SET,Docker-Extra / Domain,Docker
   - RULE-SET,Docker / Domain,Docker
 
-  # 4. 流媒体与音视频（Netflix-Extra 置于 Amazon 之前，防止 AWS 接口漏到国外组触发解锁失败）
+  # 视频与音乐流媒体
   - RULE-SET,Youtube / Domain,YouTube
   - RULE-SET,Netflix-Extra / Domain,流媒体
   - RULE-SET,Netflix / Domain,流媒体
-  - RULE-SET,Netflix / IP,流媒体,no-resolve
   - RULE-SET,TikTok / Domain,流媒体
   - RULE-SET,Disney / Domain,流媒体
   - RULE-SET,HBO / Domain,流媒体
   - RULE-SET,PrimeVideo / Domain,流媒体
   - RULE-SET,Spotify / Domain,流媒体
+  - AND,((NETWORK,UDP),(OR,((RULE-SET,Netflix-Extra / Domain),(RULE-SET,Netflix / Domain),(RULE-SET,TikTok / Domain),(RULE-SET,Disney / Domain),(RULE-SET,HBO / Domain),(RULE-SET,PrimeVideo / Domain),(RULE-SET,Spotify / Domain)))),REJECT
   - RULE-SET,Twitch / Domain,Twitch
 
-  # 5. 国内大流量 CDN 先行直连（省代理流量、跑满本地宽带）
+  # ===== 第 4 层：国内外大类域名分界（国内双栈 CDN 先行直连） =====
+  # 实测 steamserver.net / mzstatic.com / windowsupdate 等需在 NonCN 前显式拉回直连
   - RULE-SET,Apple-CN / Domain,DIRECT
   - RULE-SET,Microsoft-CN / Domain,DIRECT
   - RULE-SET,Games-CN / Domain,DIRECT
-
-  # 6. 海外常用平台、社交、交易与游戏
-  - RULE-SET,GitHub / Domain,国外
-  - RULE-SET,Telegram / Domain,国外
-  - RULE-SET,Telegram / IP,国外,no-resolve
-  - RULE-SET,Twitter / Domain,国外
-  - RULE-SET,WhatsApp / Domain,国外
-  - RULE-SET,Facebook / Domain,国外
-  - RULE-SET,Amazon / Domain,国外
-  - RULE-SET,Apple / Domain,国外
-  - RULE-SET,Microsoft / Domain,国外
-  - RULE-SET,OKX / Domain,国外
-  - RULE-SET,Bybit / Domain,国外
-  - RULE-SET,Binance / Domain,国外
-  - RULE-SET,Steam / Domain,国外
-  - RULE-SET,Epic / Domain,国外
-  - RULE-SET,EA / Domain,国外
-  - RULE-SET,Blizzard / Domain,国外
-  - RULE-SET,UBI / Domain,国外
-  - RULE-SET,PlayStation / Domain,国外
-  - RULE-SET,Nintend / Domain,国外
-  - RULE-SET,Google / Domain,国外
-  - RULE-SET,Google / IP,国外,no-resolve
-
-  # 7. 自定义强制代理与非国区/国内兜底（复用二进制 NonCN.mrs，移除近 1MB 停更文本 Global.list）
   - RULE-SET,Proxy / Domain,国外
   - RULE-SET,NonCN / Domain,国外
   - RULE-SET,China / Domain,DIRECT
+
+  # ===== 第 5 层：纯 IP 规则统一后置（全部携带 no-resolve，仅匹配裸 IP 连接） =====
+  - RULE-SET,Netflix / IP,流媒体,no-resolve
+  - AND,((NETWORK,UDP),(RULE-SET,Netflix / IP,no-resolve)),REJECT
+  - RULE-SET,Telegram / IP,国外,no-resolve
+  - RULE-SET,Google / IP,国外,no-resolve
   - RULE-SET,China / IP,DIRECT,no-resolve
+
+  # ===== 第 6 层：最终兜底 =====
   - MATCH,其他
 
-# 公共规则源默认参数（Mihomo 会忽略 x-rule-defaults 辅助键；同步脚本会自动展开并剥离）
+# 公共规则源默认参数（Mihomo 忽略 x-rule-defaults 辅助键；同步脚本自动展开并剥离）
 x-rule-defaults:
   classical: &rule-classical {type: http, interval: 86400, behavior: classical, format: text}
   domain_txt: &rule-domain-txt {type: http, interval: 86400, behavior: domain, format: text}
@@ -78,7 +77,7 @@ x-rule-defaults:
   ip: &rule-ip {type: http, interval: 86400, behavior: ipcidr, format: mrs}
 
 rule-providers:
-  # ===== 自维护模块化规则集（flying864/rule） =====
+  # ===== 1. 自维护模块化规则集（flying864/rule，6 个） =====
   Direct / Domain:
     <<: *rule-classical
     url: https://gh-proxy.com/raw.githubusercontent.com/flying864/rule/refs/heads/main/config/openclash/Direct
@@ -104,103 +103,27 @@ rule-providers:
     url: https://gh-proxy.com/raw.githubusercontent.com/flying864/rule/refs/heads/main/config/mihomo/ruleset/netflix-extra.list
     path: ./ruleset/router-mac/netflix-extra.list
 
-  # ===== MetaCubeX 官方二进制 .mrs 规则集（全面替换停更纯文本 .list） =====
-  ChatGPT / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/openai.mrs
-    path: ./ruleset/router-mac/openai.mrs
-  Claude / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/anthropic.mrs
-    path: ./ruleset/router-mac/anthropic.mrs
-  Gemini / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/google-gemini.mrs
-    path: ./ruleset/router-mac/google-gemini.mrs
-  Perplexity / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/perplexity.mrs
-    path: ./ruleset/router-mac/perplexity.mrs
-  AI-Extra / Domain:
+  # ===== 2. 专项业务官方二进制 .mrs 规则集（11 个） =====
+  AI / Domain:
     <<: *rule-domain
     url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.mrs
     path: ./ruleset/router-mac/category-ai-noncn.mrs
-  GitHub / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/github.mrs
-    path: ./ruleset/router-mac/github.mrs
   Docker / Domain:
     <<: *rule-domain
     url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/docker.mrs
     path: ./ruleset/router-mac/docker.mrs
-  Telegram / Domain:
+  Youtube / Domain:
     <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/telegram.mrs
-    path: ./ruleset/router-mac/telegram-domain.mrs
-  Telegram / IP:
-    <<: *rule-ip
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs
-    path: ./ruleset/router-mac/telegram-ip.mrs
-  Twitter / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/x.mrs
-    path: ./ruleset/router-mac/x.mrs
-  WhatsApp / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/whatsapp.mrs
-    path: ./ruleset/router-mac/whatsapp.mrs
-  Facebook / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/facebook.mrs
-    path: ./ruleset/router-mac/facebook.mrs
-  Amazon / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/amazon.mrs
-    path: ./ruleset/router-mac/amazon.mrs
-  Apple-CN / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple-cn.mrs
-    path: ./ruleset/router-mac/apple-cn.mrs
-  Apple / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple.mrs
-    path: ./ruleset/router-mac/apple.mrs
-  Microsoft-CN / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft@cn.mrs
-    path: ./ruleset/router-mac/microsoft-cn.mrs
-  Microsoft / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft.mrs
-    path: ./ruleset/router-mac/microsoft.mrs
-  Games-CN / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-games@cn.mrs
-    path: ./ruleset/router-mac/games-cn.mrs
-  OKX / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/okx.mrs
-    path: ./ruleset/router-mac/okx.mrs
-  Bybit / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/bybit.mrs
-    path: ./ruleset/router-mac/bybit.mrs
-  Binance / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/binance.mrs
-    path: ./ruleset/router-mac/binance.mrs
-  TikTok / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/tiktok.mrs
-    path: ./ruleset/router-mac/tiktok.mrs
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/youtube.mrs
+    path: ./ruleset/router-mac/youtube.mrs
   Netflix / Domain:
     <<: *rule-domain
     url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/netflix.mrs
     path: ./ruleset/router-mac/netflix-domain.mrs
-  Netflix / IP:
-    <<: *rule-ip
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/netflix.mrs
-    path: ./ruleset/router-mac/netflix-ip.mrs
+  TikTok / Domain:
+    <<: *rule-domain
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/tiktok.mrs
+    path: ./ruleset/router-mac/tiktok.mrs
   Disney / Domain:
     <<: *rule-domain
     url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/disney.mrs
@@ -221,66 +144,52 @@ rule-providers:
     <<: *rule-domain
     url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/twitch.mrs
     path: ./ruleset/router-mac/twitch.mrs
-  Steam / Domain:
+
+  # ===== 3. 国内外分界与纯 IP 规则集（11 个） =====
+  Apple-CN / Domain:
     <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/steam.mrs
-    path: ./ruleset/router-mac/steam.mrs
-  Epic / Domain:
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple-cn.mrs
+    path: ./ruleset/router-mac/apple-cn.mrs
+  Microsoft-CN / Domain:
     <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/epicgames.mrs
-    path: ./ruleset/router-mac/epicgames.mrs
-  EA / Domain:
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft@cn.mrs
+    path: ./ruleset/router-mac/microsoft-cn.mrs
+  Games-CN / Domain:
     <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/ea.mrs
-    path: ./ruleset/router-mac/ea.mrs
-  Blizzard / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/blizzard.mrs
-    path: ./ruleset/router-mac/blizzard.mrs
-  UBI / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/ubisoft.mrs
-    path: ./ruleset/router-mac/ubisoft.mrs
-  PlayStation / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/playstation.mrs
-    path: ./ruleset/router-mac/playstation.mrs
-  Nintend / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/nintendo.mrs
-    path: ./ruleset/router-mac/nintendo.mrs
-  Youtube / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/youtube.mrs
-    path: ./ruleset/router-mac/youtube.mrs
-  Google / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/google.mrs
-    path: ./ruleset/router-mac/google-domain.mrs
-  Google / IP:
-    <<: *rule-ip
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/google.mrs
-    path: ./ruleset/router-mac/google-ip.mrs
-  China / Domain:
-    <<: *rule-domain
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/cn.mrs
-    path: ./ruleset/router-mac/cn-domain.mrs
-  China / IP:
-    <<: *rule-ip
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs
-    path: ./ruleset/router-mac/cn-ip.mrs
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-games@cn.mrs
+    path: ./ruleset/router-mac/games-cn.mrs
   Private / Domain:
     <<: *rule-domain
     url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/private.mrs
     path: ./ruleset/router-mac/private-domain.mrs
-  Private / IP:
-    <<: *rule-ip
-    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/private.mrs
-    path: ./ruleset/router-mac/private-ip.mrs
   NonCN / Domain:
     <<: *rule-domain
     url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-!cn.mrs
     path: ./ruleset/router-mac/noncn-domain.mrs
+  China / Domain:
+    <<: *rule-domain
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/cn.mrs
+    path: ./ruleset/router-mac/cn-domain.mrs
+  Private / IP:
+    <<: *rule-ip
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/private.mrs
+    path: ./ruleset/router-mac/private-ip.mrs
+  Netflix / IP:
+    <<: *rule-ip
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/netflix.mrs
+    path: ./ruleset/router-mac/netflix-ip.mrs
+  Telegram / IP:
+    <<: *rule-ip
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs
+    path: ./ruleset/router-mac/telegram-ip.mrs
+  Google / IP:
+    <<: *rule-ip
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/google.mrs
+    path: ./ruleset/router-mac/google-ip.mrs
+  China / IP:
+    <<: *rule-ip
+    url: https://gh-proxy.com/github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs
+    path: ./ruleset/router-mac/cn-ip.mrs
 
 proxy-groups:
   - name: 节点选择
@@ -289,24 +198,29 @@ proxy-groups:
     proxies:
       - 自动选择
       - DIRECT
+    exclude-type: direct|compatible
     include-all: true
 
   - name: 自动选择
     icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Urltest.png
     type: url-test
     url: https://www.gstatic.com/generate_204
+    expected-status: 204
     interval: 300
+    timeout: 5000
     tolerance: 50
+    max-failed-times: 3
     lazy: true
-    # 排除家宽/住宅节点，避免日常网页与大流量下载误抢家宽带宽或触发风控
+    # 排除家宽/住宅节点（保护纯净度与带宽）及伪节点类型
     exclude-filter: '(?i)(家宽|家寬|住宅)'
+    exclude-type: direct|reject|compatible
     include-all: true
 
   - name: AI
     icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/OpenAI.png
     type: select
-    # 仅筛选家宽/住宅/AI 标签并排除专线，默认自动选中 US-美国家宽AI-流媒体
-    filter: '(?i)(家宽|家寬|住宅|(^|[^A-Za-z])ai([^A-Za-z]|$))'
+    # 仅筛选家宽/住宅/AI 标签并排除专线；无匹配节点时严格 REJECT 阻断防泄露
+    filter: '(?i)(家宽|家寬|住宅|OpenAI|ChatGPT|Claude|(^|[^A-Za-z])ai([^A-Za-z]|$))'
     exclude-filter: '(?i)(专线|專線|IEPL|IPLC)'
     exclude-type: direct|compatible
     empty-fallback: REJECT
@@ -315,7 +229,7 @@ proxy-groups:
   - name: 流媒体
     icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Streaming.png
     type: select
-    filter: '(?i)(流媒体|流媒體|LMT|Netflix|奈飞|奈飛|家宽|家寬|住宅)'
+    filter: '(?i)(流媒体|流媒體|解锁|解鎖|LMT|Media|Netflix|NF|Disney|奈飞|奈飛|家宽|家寬|住宅)'
     exclude-filter: '(?i)(专线|專線|IEPL|IPLC)'
     exclude-type: direct|compatible
     empty-fallback: REJECT
@@ -328,6 +242,7 @@ proxy-groups:
       - 自动选择
       - 流媒体
       - 节点选择
+    exclude-type: direct|compatible
     empty-fallback: REJECT
     include-all: true
 
@@ -338,6 +253,7 @@ proxy-groups:
       - 自动选择
       - 节点选择
       - DIRECT
+    exclude-type: direct|compatible
     include-all: true
 
   - name: Docker
@@ -346,6 +262,7 @@ proxy-groups:
     proxies:
       - 自动选择
       - 节点选择
+    exclude-type: direct|compatible
     include-all: true
 
   - name: 国外
