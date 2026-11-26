@@ -4,14 +4,14 @@
 # https://sub.fanco124.eu.org/my 的 fanco-router-universal 模板。
 #
 # 社区“三层节点池 + 业务分流层”设计架构：
-# 1. [专线层 -> 网页浏览] 日常海外网页（Google/GitHub网页/X/Reddit/交易所等）走低延迟专线；
-#    无专线节点的订阅（如 oci-4nodes）自动剥离空专线组并无缝降级到普通线路。
-# 2. [家宽层 -> AI / 流媒体] AI 与 Netflix/Disney+/TikTok/Spotify 走原生住宅/AI家宽线路；
-#    支持节点命名为“AI家宽专线”而不与普通专线混淆；无家宽/AI节点时严格 REJECT 阻断防风控。
-# 3. [普通大流量层 -> 视频/直播/容器/下载/TG/兜底] 在 NonCN 网页规则之前提前拦截：
+# 1. [专线与家宽层 -> 网页浏览] 已知海外网页（NonCN）与长尾海外网页（MATCH -> 其他 -> 网页浏览，
+#    含 ping0.cc / ipinfo.io 等各类未收录进 NonCN 的 IP 检测站与独立站点）默认走专线节点，
+#    并在「网页浏览」内并列提供「家宽节点」一键切换；无专线/家宽的订阅（如 oci-4nodes）自动降级普通线路。
+# 2. [家宽独占层 -> AI / 流媒体] AI 与 Netflix/Disney+/TikTok/Spotify 走原生住宅/AI家宽线路；
+#    无家宽/AI节点时严格 REJECT 阻断防风控。
+# 3. [普通大流量层 -> 视频/直播/容器/下载/TG/未知UDP] 在网页规则与兜底之前精准拦截：
 #    YouTube、Twitch、Docker、GitHub Release/Clone、云盘同步、系统/游戏更新、Speedtest、
-#    通用大文件 CDN（Sukka download）、Telegram、海外非443 UDP 及 MATCH 兜底，全部走普通线路，
-#    严防大流量业务偷跑昂贵专线或家宽流量。
+#    通用大文件 CDN（Sukka download）、Telegram 及全部海外剩余 UDP 流量，统一走普通线路。
 # ==============================================================================
 
 rules:
@@ -70,15 +70,16 @@ rules:
   - RULE-SET,NonCN / Domain,网页浏览
   - RULE-SET,China / Domain,DIRECT
 
-  # ===== 第 7 层：纯 IP 规则统一后置（全部携带 no-resolve，仅匹配裸 IP 连接） =====
+  # ===== 第 7 层：IP 规则层（特定海外裸 IP 带 no-resolve；China/IP 识别未收录国内小站直连） =====
   - RULE-SET,Netflix / IP,流媒体,no-resolve
   - AND,((NETWORK,UDP),(RULE-SET,Netflix / IP,no-resolve)),REJECT
   - RULE-SET,Telegram / IP,Telegram,no-resolve
   - AND,((NETWORK,UDP),(RULE-SET,Google / IP,no-resolve)),普通线路
   - RULE-SET,Google / IP,网页浏览,no-resolve
-  - RULE-SET,China / IP,DIRECT,no-resolve
+  - RULE-SET,China / IP,DIRECT
 
-  # ===== 第 8 层：最终兜底（走普通线路） =====
+  # ===== 第 8 层：长尾兜底（未知海外 UDP 走普通线路；长尾海外网页含 IP 检测站走网页浏览[专线/家宽]） =====
+  - NETWORK,UDP,普通线路
   - MATCH,其他
 
 # 公共锚点定义（Mihomo 忽略 x-* 辅助键；同步脚本自动展开并剥离）
@@ -267,6 +268,7 @@ proxy-groups:
     type: select
     proxies:
       - 专线节点
+      - 家宽节点
       - 普通线路
       - DIRECT
       - REJECT
@@ -336,18 +338,26 @@ proxy-groups:
     icon: https://testingcf.jsdelivr.net/gh/Orz-3/mini@master/Color/Final.png
     type: select
     proxies:
-      - 普通线路
       - 网页浏览
+      - 普通线路
       - DIRECT
       - REJECT
 
-  # --- 2. 底层线路池（专线 / 普通手动 / 普通自动测速） ---
+  # --- 2. 底层线路池（专线 / 家宽 / 普通手动 / 普通自动测速） ---
   - name: 专线节点
     icon: https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Speedtest.png
     type: select
     # 仅筛选纯专线节点，排除带 AI/家宽/流媒体标签的节点
     filter: '(?i)(专线|專線|IEPL|IPLC)'
     exclude-filter: *leased_exclude
+    exclude-type: direct|compatible
+    include-all: true
+
+  - name: 家宽节点
+    icon: https://testingcf.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/United_States.png
+    type: select
+    # 筛选家宽/住宅/AI节点供「网页浏览」切换使用；无家宽节点的订阅自动隐藏该组
+    filter: '(?i)(家宽|家寬|住宅|OpenAI|ChatGPT|Claude|(^|[^A-Za-z])ai([^A-Za-z]|$))'
     exclude-type: direct|compatible
     include-all: true
 
